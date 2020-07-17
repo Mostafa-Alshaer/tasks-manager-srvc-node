@@ -1,16 +1,14 @@
 const express = require('express')
-const User = require('../models/user')
+const userService = require('../services/user')
+const userAvatarService = require('../services/userAvatar')
 const auth = require('../middleware/auth')
 const multer = require('multer')
-const sharp = require('sharp')
 const router = new express.Router()
 
 router.post('/users', async (req, res)=> {
-    const user = new User(req.body)
-
     try {
-        await user.save()
-        const token = await user.generateAuthToken()
+        const user = await userService.create(req.body)
+        const token = await userService.generateAuthToken(user)
         res.status(201).send({user, token})
     } catch (error){
         res.status(400).send(error)
@@ -19,8 +17,8 @@ router.post('/users', async (req, res)=> {
 
 router.post('/users/login', async (req, res)=> {
     try{
-        const user = await User.findByCredentials(req.body.email, req.body.password)
-        const token = await user.generateAuthToken()
+        const user = await userService.getByCredentials(req.body.email, req.body.password)
+        const token = await userService.generateAuthToken(user)
         res.send({ user, token})
     } catch(error){
         res.status(400).send()
@@ -29,11 +27,7 @@ router.post('/users/login', async (req, res)=> {
 
 router.post('/users/logout', auth, async (req, res)=> {
     try{
-        req.user.tokens = req.user.tokens.filter((token) => {
-            return token.token !== req.token
-        })
-        await req.user.save()
-
+        await userService.logout(req.user, req.token)
         res.send()
     } catch(error){
         res.status(500).send()
@@ -42,8 +36,7 @@ router.post('/users/logout', auth, async (req, res)=> {
 
 router.post('/users/logoutAll', auth, async (req, res)=> {
     try{
-        req.user.tokens = []
-        await req.user.save()
+        await userService.logoutAll(req.user)
         res.send()
     } catch(error){
         res.status(500).send()
@@ -55,17 +48,11 @@ router.get('/users/me', auth, async (req, res)=> {
 })
 
 router.patch('/users/me', auth, async (req, res)=> {
-    const updates = Object.keys(req.body)
-    const allowedUpdates = ['name','email','password','age']
-    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
-
-    if(!isValidOperation){
-        return res.status(400).send({error: "Invalid updates"})
-    }
-
     try{
-        updates.forEach((update) => req.user[update] = req.body[update])
-        await req.user.save()
+        if(! await userService.isValidUpdate(req.body) ){
+            return res.status(400).send({error: "Invalid updates"})
+        }
+        await userService.update(req.user, req.body)
         res.send(req.user)
     } catch(error){
         res.status(500).send(error)
@@ -74,7 +61,7 @@ router.patch('/users/me', auth, async (req, res)=> {
 
 router.delete('/users/me', auth, async (req, res)=> {
     try{
-        await req.user.remove()
+        await userService.delete(req.user)
         res.send(req.user)
     } catch(error){
         res.status(500).send(error)
@@ -95,33 +82,27 @@ const upload = multer({
 })
 
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res)=> {
-    const buffer = await sharp(req.file.buffer)
-    .resize({ width: 250, height: 250}).png().toBuffer()
-    req.user.avatar = buffer
-    await req.user.save()
+    await userAvatarService.upload(req.user, req.file)
     res.send()
 }, (error, req, res, next) => {
     res.status(400).send({error : error.message})
 })
 
 router.delete('/users/me/avatar', auth, async (req, res)=> {
-    req.user.avatar = undefined
-    await req.user.save()
+    await userAvatarService.delete(req.user)
     res.send()
 })
 
 router.get('/users/:id/avatar', async (req, res) => {
     try{
-        const user = await User.findById(req.params.id)
-
-        if(!user || !user.avatar){
-          throw new Error()
+        const avatar = await userAvatarService.get(req.params.id)
+        if(!avatar){
+            res.status(404).send()
         }
-
         res.set('Content-Type', 'image/png')
-        res.send(user.avatar)
+        res.send(avatar)
     } catch(error){
-        res.status(404).send()
+        res.status(500).send()
     }
 })
 

@@ -6,8 +6,7 @@ const taskService = {
             ...body,
             owner: userID
         })
-        task.save()
-        return task;
+        return await task.save()
     },
     getList: async (query, userID) => {
         const match = {owner: userID }
