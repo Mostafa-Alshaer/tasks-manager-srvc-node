@@ -1,94 +1,78 @@
 const express = require('express')
-const Task = require('../models/task')
+const taskService = require('../services/task')
 const auth = require('../middleware/auth')
+const loggerFactory = require('../utils/loggerFactory')
 const router = new express.Router()
+const logger = loggerFactory.getLogger('routers/task')
 
 router.post('/tasks', auth, async (req, res)=> {
-    const task = new Task({
-        ...req.body,
-        owner: req.user._id
-    })
-
     try{
-        task.save()
+        logger.info('creating a new task...')
+        const task = await taskService.create(req.body, req.user._id)
         res.status(201).send(task)
     } catch(error){
+        logger.error('error while creating a new task, the error: ' + error)
         res.status(400).send(error)
     }
 })
 
 router.get('/tasks', auth, async (req, res)=> {
-
-    const match = {owner: req.user._id }
-    const sort = {}
-
-    if(req.query.completed){
-        match.completed = req.query.completed === 'true'
-    }
-
-    if(req.query.sortBy){
-        const parts = req.query.sortBy.split(':')
-        sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
-    }
-
     try{
-        const tasks = await Task.find(match)
-        .limit(parseInt(req.query.limit))
-        .skip(parseInt(req.query.skip))
-        .sort(sort)
+        logger.info('getting a list of tasks...')
+        const tasks = await taskService.getList(req.query, req.user._id)
         res.send(tasks)
     } catch(error){
+        logger.error('error while getting a list of tasks, the error: ' + error)
         res.status(500).send()
     }
 })
 
 router.get('/tasks/:id', auth, async (req, res)=> {
-    const _id = req.params.id
-
     try{
-        const task = await Task.findOne({ _id , owner: req.user._id})
+        logger.info('getting a task by its id...')
+        const task = await taskService.getByID(req.params.id, req.user.id)
         if (!task){
+            logger.debug('not found a task with an id equal to: ' + req.params.id)
             return res.status(404).send()
         }
         res.send(task)
     } catch(error){
+        logger.error('error while getting a task by its id, the error: ' + error)
         res.status(500).send()
     }
 })
 
 router.patch('/tasks/:id', auth, async (req, res)=> {
-    const updates = Object.keys(req.body)
-    const allowedUpdates = ['description','completed']
-    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
-
-    if(!isValidOperation){
-        return res.status(400).send({error: "Invalid updates"})
-    }
-
     try{
-        const task = await Task.findOne({ _id: req.params.id, owner: req.user.id})
-
+        logger.info('updating a task info...')
+        if(! await taskService.isValidUpdate(req.body) ){
+            logger.warn('a user tried to do an invalid update')
+            return res.status(400).send({error: "Invalid updates"})
+        }
+        const task = await taskService.getByID(req.params.id, req.user.id)
         if (!task){
+            logger.debug('not found a task with an id equal to: ' + req.params.id)
             return res.status(404).send()
         }
-
-        updates.forEach((update) => task[update] = req.body[update])
-        await task.save()
-
+        await taskService.update(task, req.body)
         res.send(task)
     } catch(error){
+        logger.error('error while updating a task, the error: ' + error)
         res.status(500).send(error)
     }
 })
 
 router.delete('/tasks/:id', auth, async (req, res)=> {
     try{
-        const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user.id})
+        logger.info('deleting a task...')
+        const task = await taskService.getByIdAndDelete(req.params.id, req.user.id)
         if (!task){
+            logger.debug('not found a task with an id equal to: ' + req.params.id)
             return res.status(404).send()
         }
         res.send(task)
     } catch(error){
+        logger.error('error while deleting a task, the error: ' + error)
         res.status(500).send()
     }
 })
