@@ -3,7 +3,7 @@ const taskService = require('../services/task')
 const auth = require('../middleware/auth')
 const loggerFactory = require('../utils/loggerFactory')
 const router = new express.Router()
-const logger = loggerFactory.getLogger('routers/user')
+const logger = loggerFactory.getLogger('routers/task')
 
 router.post('/tasks', auth, async (req, res)=> {
     try{
