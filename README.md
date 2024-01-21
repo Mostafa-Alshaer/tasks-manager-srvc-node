@@ -1,5 +1,3 @@
-
-```markdown
 # Tasks Manager Service (Node.js)
 
 Welcome to the Tasks Manager Service repository! This project is a Node.js implementation of a service for managing tasks, designed following the principles of a Service-Oriented Architecture (SOA).
