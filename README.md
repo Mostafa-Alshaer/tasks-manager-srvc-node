@@ -69,5 +69,3 @@ The service will be accessible at `http://localhost:3000`.
 ## Contributing
 
 Contributions are welcome! Feel free to open issues, submit pull requests, or suggest improvements.
-
-```
