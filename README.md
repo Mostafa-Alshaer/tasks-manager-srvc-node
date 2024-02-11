@@ -1,6 +1,6 @@
 # Tasks Manager Service (Node.js)
 
-Welcome to the Tasks Manager Service repository! This project is a Node.js implementation of a service for managing tasks, designed following the principles of a Service-Oriented Architecture (SOA).
+Welcome to the Tasks Manager Service repository! This project is a Node.js implementation of a service for managing tasks.
 
 ## Table of Contents
 
@@ -13,12 +13,11 @@ Welcome to the Tasks Manager Service repository! This project is a Node.js imple
 
 ## Overview
 
-The Tasks Manager Service is a backend service built using Node.js, designed to handle task management functionalities within a Service-Oriented Architecture. This project emphasizes modularity, scalability, and maintainability, making it suitable for integration into larger distributed systems.
+The Tasks Manager Service is a backend service built using Node.js, designed to handle task management functionalities. This project emphasizes modularity, scalability, and maintainability, making it suitable for integration into larger distributed systems.
 
 ## Features
 
 - **Task CRUD Operations:** Perform Create, Read, Update, and Delete operations on tasks.
-- **Service-Oriented Architecture.**
 - **Express.js Framework:** Utilizes Express.js to handle routing and HTTP requests.
 - **MongoDB Integration:** Stores task data in a MongoDB database for persistence.
 
